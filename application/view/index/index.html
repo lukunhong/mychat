@@ -54,6 +54,8 @@
 </div>
 </div>
 <script>
+    var from_id = {$from_id};
+    var to_id = {$to_id};
     //链接socket
     var ws = new WebSocket("ws://127.0.0.1:8282");
     //接收socket发送的消息
@@ -62,17 +64,27 @@
         var msg = JSON.parse(e.data);
         console.log(e);
         switch (msg.type){
+            //绑定聊天对象
+            case 'init':
+                var bind = '{"type":"bind","from_id":"'+from_id+'"}';
+                ws.send(bind);
+                return;
             case 'text':
-                $(".chat-content").append(' <div class="chat-text section-left flex">' +
-                    '            <span class="char-img img1"></span>' +
-                    '            <span class="text"><i class="icon icon-sanjiao4 t-32"></i>'+msg.data+'</span></div>');
+                if (to_id == msg.from_id) {
+                    $(".chat-content").append(' <div class="chat-text section-left flex">' +
+                        '            <span class="char-img img1"></span>' +
+                        '            <span class="text"><i class="icon icon-sanjiao4 t-32"></i>' + msg.data + '</span></div>');
+                }
+                return;
+            case 'save':
+                save_msg(msg);
                 return;
         }
     };
     //发送消息到服务器
     $(".send-btn").click(function () {
         var text = $(".send-input").val();
-        var msg = '{"data":"'+text+'","type":"say"}';
+        var msg = '{"data":"'+text+'","type":"say","from_id":'+from_id+',"to_id":'+to_id+'}';
         ws.send(msg);
         $(".chat-content").append('<div class="chat-text section-right flex">' +
             '            <span class="text"><i class="icon icon-sanjiao3 t-32"></i>'+text+'</span>' +
@@ -80,6 +92,12 @@
             '           </div>');
         $(".send-input").val('');
     });
+
+    //数据持久化
+    function save_msg(msg) {
+        $.post('/admin/api/mychat',
+        );
+    }
 
 </script>
 </body>
