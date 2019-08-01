@@ -10,21 +10,13 @@
     <script src="__STATIC__/mychat/js/jquery.min.js"></script>
     <script src="__STATIC__/mychat/js/dist/flexible/flexible_css.debug.js"></script>
     <script src="__STATIC__/mychat/js/dist/flexible/flexible.debug.js"></script>
-    <style>
-        .img1{
-            background-image: url("__STATIC__/mychat/img/123.jpg");
-        }
-        .img2{
-            background-image: url("__STATIC__/mychat/img/132.jpg");
-        }
-    </style>
 </head>
 <body ontouchstart>
 <div class='fui-page-group'>
 <div class='fui-page chatDetail-page'>
     <div class="chat-header flex">
         <i class="icon icon-toleft t-48"></i>
-        <span class="shop-titlte t-30">商店</span>
+        <span class="shop-titlte t-30" id="title">测试</span>
         <span class="shop-online t-26"></span>
         <span class="into-shop">进店</span>
     </div>
@@ -56,28 +48,49 @@
 <script>
     var from_id = {$from_id};
     var to_id = {$to_id};
+    var from_head = '';
+    var to_head = '';
+    var to_name = '未知用户';
+    var API_URL = "http://mychat.com/index.php/api/mychat/";
     //链接socket
     var ws = new WebSocket("ws://127.0.0.1:8282");
     //接收socket发送的消息
     ws.onmessage = function (e) {
         //处理接收到的消息
         var msg = JSON.parse(e.data);
-        console.log(e);
         switch (msg.type){
-            //绑定聊天对象
             case 'init':
                 var bind = '{"type":"bind","from_id":"'+from_id+'"}';
+                //绑定聊天对象
                 ws.send(bind);
+                //获取双方头像
+                get_head(from_id,to_id);
+                //获取聊天对象
+                get_name(to_id);
+                //加载聊天对象
+                msg_load();
+                //判断在线
+                is_online();
                 return;
             case 'text':
                 if (to_id == msg.from_id) {
-                    $(".chat-content").append(' <div class="chat-text section-left flex">' +
-                        '            <span class="char-img img1"></span>' +
-                        '            <span class="text"><i class="icon icon-sanjiao4 t-32"></i>' + msg.data + '</span></div>');
+                    receive_div(msg.data);
                 }
                 return;
             case 'save':
                 save_msg(msg);
+                if (msg.isread == 1){
+                    $(".shop-online").text('在线');
+                }else{
+                    $(".shop-online").text('离线');
+                }
+                return;
+            case 'online':
+                if (msg.status == 1){
+                    $(".shop-online").text('在线');
+                }else{
+                    $(".shop-online").text('离线');
+                }
                 return;
         }
     };
@@ -86,20 +99,64 @@
         var text = $(".send-input").val();
         var msg = '{"data":"'+text+'","type":"say","from_id":'+from_id+',"to_id":'+to_id+'}';
         ws.send(msg);
-        $(".chat-content").append('<div class="chat-text section-right flex">' +
-            '            <span class="text"><i class="icon icon-sanjiao3 t-32"></i>'+text+'</span>' +
-            '            <span class="char-img img2"></span>' +
-            '           </div>');
+        //拼接聊天数据
+        send_div(text);
         $(".send-input").val('');
     });
-
     //消息持久化
     function save_msg(msg) {
-        $.post('/index.php/api/mychat/saveMsg',msg,function (e) {
-
-        },'json');
+        $.post(API_URL+'/saveMsg',msg,function (e) {},'json');
     }
 
+    //获取头像
+    function get_head(from_id,to_id) {
+        $.post('/index.php/api/mychat/getHead',{from_id:from_id,to_id:to_id},function (e) {
+            from_head = e.from_head;
+            to_head = e.to_head;
+        },'json');
+    }
+    //获取昵称
+    function get_name(to_id) {
+        $.post('/index.php/api/mychat/getName/uid/'+to_id,'',function (e) {
+            if (e.length>0){
+                to_name = e;
+            }
+            $("#title").text('与'+to_name+'聊天中...')
+        },'json');
+    }
+    //获取聊天记录
+    function msg_load(){
+        $.post('/index.php/api/mychat/loadMsg',{from_id:from_id,to_id:to_id},function (e) {
+            $.each(e,function (i,item) {
+                if(from_id == item.fromid){
+                    //拼接聊天数据
+                    send_div(item.content);
+                }else{
+                    receive_div(item.content);
+                }
+            });
+            $(".chat-content").scrollTop(3000);
+        },'json');
+    }
+    //判断在线
+    function is_online() {
+        var online = '{"type":"online","to_id":"'+to_id+'","from_id":"'+from_id+'"}';
+        ws.send(online);
+    }
+    //拼接发送方聊天记录
+    function send_div(msg) {
+        $(".chat-content").append('<div class="chat-text section-right flex">'
+            +'<span class="text"><i class="icon icon-sanjiao3 t-32"></i>' + msg + '</span>'
+            +'<span class="char-img img2" style="background-image: url('+from_head+')"></span></div>');
+        $(".chat-content").scrollTop(3000);
+    }
+    //拼接接收方聊天记录
+    function receive_div(msg) {
+        $(".chat-content").append(' <div class="chat-text section-left flex">'
+            +'<span class="char-img img1" style="background-image: url('+to_head+')"></span>'
+            +'<span class="text"><i class="icon icon-sanjiao4 t-32"></i>' + msg + '</span></div>');
+        $(".chat-content").scrollTop(3000);
+    }
 </script>
 </body>
 </html>
