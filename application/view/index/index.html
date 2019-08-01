@@ -34,13 +34,13 @@
             <!--<span class="text"><i class="icon icon-sanjiao3 t-32"></i>你好</span>-->
             <!--<span class="char-img img2"></span>-->
            <!--</div>-->
-
         </div>
     </div>
     <div class="fix-send flex footer-bar">
         <i class="icon icon-emoji1 t-50"></i>
         <input class="send-input t-28" maxlength="200">
-        <i class="icon icon-add t-50" style="color: #888;"></i>
+        <input type="file" name="pic" id="file" style="display: none;">
+        <i class="icon icon-add image_up t-50" style="color: #888;"></i>
         <span class="send-btn">发送</span>
     </div>
 </div>
@@ -51,7 +51,7 @@
     var from_head = '';
     var to_head = '';
     var to_name = '未知用户';
-    var API_URL = "http://mychat.com/index.php/api/mychat/";
+    var online = 1;//在线
     //链接socket
     var ws = new WebSocket("ws://127.0.0.1:8282");
     //接收socket发送的消息
@@ -72,23 +72,39 @@
                 //判断在线
                 is_online();
                 return;
+            //接收消息
             case 'text':
                 if (to_id == msg.from_id) {
                     receive_div(msg.data);
+                    $(".chat-content").scrollTop(3000);
                 }
                 return;
+            //消息持久化
             case 'save':
                 save_msg(msg);
                 if (msg.isread == 1){
+                    online = 1;
                     $(".shop-online").text('在线');
                 }else{
+                    online = 0;
                     $(".shop-online").text('离线');
                 }
                 return;
+            //接收图片消息
+            case 'say_img':
+                if (to_id == msg.from_id) {
+                    var str = '<img src="__ROOT__/uploads/'+msg.img_name+'" width="120em" height="120em">';
+                    receive_div(str);
+                    $(".chat-content").scrollTop(3000);
+                }
+                return;
+            //在线判断
             case 'online':
                 if (msg.status == 1){
+                    online = 1;
                     $(".shop-online").text('在线');
                 }else{
+                    online = 0;
                     $(".shop-online").text('离线');
                 }
                 return;
@@ -101,13 +117,13 @@
         ws.send(msg);
         //拼接聊天数据
         send_div(text);
+        $(".chat-content").scrollTop(3000);
         $(".send-input").val('');
     });
-    //消息持久化
+    //消息持久化（单用户多窗口不同接收方cors不同源可能出现多次插入数据，后期需要处理）
     function save_msg(msg) {
         $.post(API_URL+'/saveMsg',msg,function (e) {},'json');
     }
-
     //获取头像
     function get_head(from_id,to_id) {
         $.post('/index.php/api/mychat/getHead',{from_id:from_id,to_id:to_id},function (e) {
@@ -130,8 +146,15 @@
             $.each(e,function (i,item) {
                 if(from_id == item.fromid){
                     //拼接聊天数据
+                    //图片类型
+                    if (item.type == 2){
+                        item.content = '<img src="__ROOT__/uploads/'+item.content+'" width="120em" height="120em">';
+                    }
                     send_div(item.content);
                 }else{
+                    if (item.type == 2){
+                        item.content = '<img src="__ROOT__/uploads/'+item.content+'" width="120em" height="120em">';
+                    }
                     receive_div(item.content);
                 }
             });
@@ -148,15 +171,49 @@
         $(".chat-content").append('<div class="chat-text section-right flex">'
             +'<span class="text"><i class="icon icon-sanjiao3 t-32"></i>' + msg + '</span>'
             +'<span class="char-img img2" style="background-image: url('+from_head+')"></span></div>');
-        $(".chat-content").scrollTop(3000);
     }
     //拼接接收方聊天记录
     function receive_div(msg) {
         $(".chat-content").append(' <div class="chat-text section-left flex">'
             +'<span class="char-img img1" style="background-image: url('+to_head+')"></span>'
             +'<span class="text"><i class="icon icon-sanjiao4 t-32"></i>' + msg + '</span></div>');
-        $(".chat-content").scrollTop(3000);
     }
+    //点击图片
+    $(".image_up").click(function () {
+        $("#file").click();
+    });
+    $("#file").change(function () {
+        //异步上传图片
+        var formdata = new FormData();
+        //追加数据
+        formdata.append('from_id',from_id);
+        formdata.append('to_id',to_id);
+        formdata.append('online',online);
+        formdata.append('file',$("#file")[0].files[0]);
+        $.ajax({
+            url:'/index.php/api/mychat/uploadImg',
+            type:'post',
+            //禁止读取缓存
+            cache:false,
+            data:formdata,
+            dateType:'json',
+            //去除默认数据格式，在上传文件时就不会报错
+            contentType:false,
+            //默认所有内容转为对象形式(禁止掉)
+            processData:false,
+            success:function (data,status) {
+                console.log(data);
+                if (data.status == 'ok'){
+                    var str = '<img src="__ROOT__/uploads/'+data.img_name+'" width="120em" height="120em">';
+                    send_div(str);
+                    var msg = '{"data":"'+data.img_name+'","from_id":"'+from_id+'","to_id":"'+to_id+'","type":"say_img"}';
+                    ws.send(msg);
+                }else{
+                    console.log(data.status);
+                }
+            }
+        });
+    })
 </script>
 </body>
 </html>

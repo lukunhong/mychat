@@ -98,4 +98,47 @@ class Mychat extends Controller{
         }
     }
 
+    /**
+     * 异步图片上传
+     */
+    public function uploadImg()
+    {
+        $file = $_FILES['file'];
+        $from_id = input('post.from_id');
+        $to_id = input('post.to_id');
+        $online = input('post.online');
+        //后缀
+        $suffix = strtolower(strrchr($file['name'],'.'));
+        $allow_type = array('.jpg','.jpeg','.png','.gif');
+        if (!in_array($suffix,$allow_type)){
+            return array('status'=>'img type error');
+        }
+        if ($file['size']/1024 > 5120){
+            return array('status'=>'img size too big');
+        }
+        $file_name = uniqid("mychat_img",false);
+        $path = ROOT_PATH.'public\\uploads\\';
+        //递归创建目录
+        directory($path);
+        $file_up = $path.$file_name.$suffix;
+        $ret = move_uploaded_file($file['tmp_name'],$file_up);
+        if ($ret){
+            $name = $file_name.$suffix;
+            $data['content'] = $name;
+            $data['fromid'] = $from_id;
+            $data['toid'] = $to_id;
+            $data['fromname'] = $this->getName($from_id);
+            $data['toname'] = $this->getName($to_id);
+            $data['time'] = time();
+            $data['isread'] = $online;
+            $data['type'] = 2;//图片消息
+            $msg_id = Db::name('communication')->insertGetId($data);
+            if ($msg_id){
+                return array('status'=>'ok','img_name'=>$name);
+            }else{
+                return array('status'=>'false');
+            }
+        }
+    }
+
 }
