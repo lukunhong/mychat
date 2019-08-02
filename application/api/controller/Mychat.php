@@ -31,7 +31,8 @@ class Mychat extends Controller{
                 $data_arr['toname'] = $toname;
                 $data_arr['content'] = $msg['data'];
                 $data_arr['time'] = $msg['time'];
-                $data_arr['isread'] = $msg['isread'];
+//                $data_arr['isread'] = $msg['isread'];
+                $data_arr['isread'] = 0;
                 $data_arr['type'] = 1; //文本消息
                 Db::name('communication')->insert($data_arr);
             }
@@ -130,7 +131,8 @@ class Mychat extends Controller{
             $data['fromname'] = $this->getName($from_id);
             $data['toname'] = $this->getName($to_id);
             $data['time'] = time();
-            $data['isread'] = $online;
+//            $data['isread'] = $online;
+            $data['isread'] = 0;
             $data['type'] = 2;//图片消息
             $msg_id = Db::name('communication')->insertGetId($data);
             if ($msg_id){
@@ -192,6 +194,18 @@ class Mychat extends Controller{
                 ];
             },$info);
             return $rows;
+        }
+    }
+
+    /**
+     * 更改消息阅读状态
+     */
+    public function readMsg(){
+        if ($this->request->isAjax()){
+            //需要注意接收方不一样
+            $to_id = input('post.from_id');
+            $from_id = input('post.to_id');
+            echo Db::name('communication')->where(array('fromid'=>$from_id,'toid'=>$to_id))->update(array('isread'=>1));
         }
     }
 

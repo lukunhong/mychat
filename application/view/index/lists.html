@@ -76,7 +76,8 @@
 //
 //
 //    });
-    
+
+    //刷新列表数据
     function refreshList() {
         $.post(API_URL+"getList", {id:from_id},
             function(res){
@@ -87,6 +88,7 @@
         )
     }
 
+    //刷新列表样式
     function refreshDiv(value) {
         var str = '';
         if (value.countNotread>0){
