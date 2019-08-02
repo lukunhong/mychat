@@ -19,8 +19,8 @@ class Mychat extends Controller{
      */
     public function saveMsg()
     {
+        $msg = input('post.');
         if ($this->request->isAjax()){
-            $msg = input('post.');
             //组装数据
             $fromname = $this->getName($msg['from_id']);
             $toname = $this->getName($msg['to_id']);
@@ -138,6 +138,60 @@ class Mychat extends Controller{
             }else{
                 return array('status'=>'false');
             }
+        }
+    }
+
+    /**
+     * 获取单一头像
+     * @param $id
+     */
+    public function getSingleHead($id)
+    {
+        $head = Db::name('user')->where('id',$id)->value('headimgurl');
+        return $head;
+    }
+
+    /**
+     * 获取未读
+     * @param $fromid
+     * @param $toid
+     */
+    public function getCountNotRead($fromid,$toid)
+    {
+        return Db::name('communication')->where(array('fromid'=>$fromid,'toid'=>$toid,'isread'=>0))->count('id');
+    }
+
+    /**
+     * 获取最后一条聊天记录
+     * @param $fromid
+     * @param $toid
+     */
+    public function getLastMsg($fromid,$toid)
+    {
+        $ret = Db::name('communication')->where('(fromid=:fromid and toid=:toid) || (fromid=:toid1 and toid=:fromid1)',
+            ['fromid'=>$fromid,'toid'=>$toid,'fromid1'=>$fromid,'toid1'=>$toid])->order('id DESC')->limit(1)->find();
+        return $ret;
+    }
+
+    /**
+     * 根据from_id获取聊天列表
+     */
+    public function getList()
+    {
+        if ($this->request->isAjax()){
+            $from_id = input('post.id');
+            $info = Db::name('communication')->field('fromid,toid,fromname')->where('toid',$from_id)->group('fromid')->order('id DESC')->select();
+            $rows = array_map(function ($res){
+                return [
+                    'hear_url'  => $this->getSingleHead($res['fromid']),
+                    'username'  => $res['fromname'],
+                    'countNotread'  => $this->getCountNotRead($res['fromid'],$res['toid']),
+                    'last_message'  => $this->getLastMsg($res['fromid'],$res['toid']),
+                    //前往跳转的地址
+                    'mychat_page' => "/index.php/index/index?from_id={$res['toid']}&to_id={$res['fromid']}"
+                ];
+            },$info);
+            return $rows;
         }
     }
 
