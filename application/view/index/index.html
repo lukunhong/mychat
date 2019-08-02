@@ -79,6 +79,8 @@
                 msg_load();
                 //判断在线
                 is_online();
+                //消息已读
+                readMsg();
                 return;
             //接收消息
             case 'text':
@@ -86,6 +88,8 @@
                     msg.data = replace_em(msg.data);
                     receive_div(msg.data);
                 }
+                //消息已读
+                setTimeout("readMsg()",500);
                 return;
             //消息持久化
             case 'save':
@@ -104,6 +108,8 @@
                     var str = '<img src="__ROOT__/uploads/'+msg.img_name+'" width="120em" height="120em">';
                     receive_div(str);
                 }
+                //消息已读
+                setTimeout("readMsg()",500);
                 return;
             //在线判断
             case 'online':
@@ -225,7 +231,15 @@
                 }
             }
         });
-    })
+    });
+
+    //标记消息已读
+    function readMsg(){
+        $.post(
+            '/index.php/api/mychat/readMsg',
+            {"from_id":from_id,"to_id":to_id},
+            function () {},'json')
+    }
 
     //qq表情
     $(function(){
