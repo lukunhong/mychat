@@ -43,29 +43,64 @@
 <script>
     var API_URL = "/index.php/api/mychat/";
     var from_id = {$from_id};
-    $(function(){
+    //链接socket
+    var ws = new WebSocket("ws://127.0.0.1:8282");
+    ws.onmessage = function (e) {
+        var msg = JSON.parse(e.data);
+        switch (msg.type){
+            case 'init':
+                var bind = '{"type":"bind","from_id":"'+from_id+'"}';
+                refreshList();
+                //绑定聊天对象
+                ws.send(bind);
+                return;
+            case 'text':
+                //清空原始加载
+                $(".chat-fui-content").empty();
+                refreshList();
+                return;
+            case 'say_img':
+                $(".chat-fui-content").empty();
+                refreshList();
+                return;
+        }
+    };
+//    $(function(){
+//        $.post(API_URL+"getList", {id:from_id},
+//                function(res){
+//                    $.each(res,function (index,value) {
+//                        refreshDiv(value);
+//                    })
+//                },'json'
+//        )
+//
+//
+//    });
+    
+    function refreshList() {
         $.post(API_URL+"getList", {id:from_id},
-                function(res){
-                    console.log(res);
-                    $.each(res,function (index,value) {
-                        var str = '';
-                        if (value.countNotread>0){
-                            str = '<span class="badge" style="top: -0.1rem;left: 80%;text-align: center;">'+value.countNotread+'</span>';
-						}
-						$(".chat-fui-content").append('<div class="chat-list flex" onclick=redirect("'+value.mychat_page +'")>' +
-                            '<div class="chat-img" style="background-image: url('+value.hear_url+')">' +
-							str +
-                            '</div>' +
-                            '<div class="chat-info">' +
-                            '<p class="chat-merch flex"><span class="title t-28">'+value.username+'</span>' +
-                            '<span class="time">'+mydate(value.last_message.time)+'</span></p>'+
-                            '<p class="chat-text singleflow-ellipsis">'+value.last_message.content+'</p></div></div>')
-                    })
-                },'json'
+            function(res){
+                $.each(res,function (index,value) {
+                    refreshDiv(value);
+                })
+            },'json'
         )
+    }
 
-
-    });
+    function refreshDiv(value) {
+        var str = '';
+        if (value.countNotread>0){
+            str = '<span class="badge" style="top: -0.1rem;left: 80%;text-align: center;">'+value.countNotread+'</span>';
+        }
+        $(".chat-fui-content").append('<div class="chat-list flex" onclick=redirect("'+value.mychat_page +'")>' +
+            '<div class="chat-img" style="background-image: url('+value.hear_url+')">' +
+            str +
+            '</div>' +
+            '<div class="chat-info">' +
+            '<p class="chat-merch flex"><span class="title t-28">'+value.username+'</span>' +
+            '<span class="time">'+mydate(value.last_message.time)+'</span></p>'+
+            '<p class="chat-text singleflow-ellipsis">'+value.last_message.content+'</p></div></div>')
+    }
 
     /**跳转页面*/
     function redirect(url) {
