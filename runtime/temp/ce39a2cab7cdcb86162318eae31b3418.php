@@ -1,17 +1,18 @@
+<?php if (!defined('THINK_PATH')) exit(); /*a:1:{s:36:"../application/view/index\index.html";i:1564723905;}*/ ?>
 <!doctype html>
 <html>
 <head>
     <meta charset="utf-8">
     <meta name="format-detection" content="telephone=no" />
     <title>沟通中</title>
-    <link rel="stylesheet" type="text/css" href="__STATIC__/mychat/css/themes.css?v=2017129">
-    <link rel="stylesheet" type="text/css" href="__STATIC__/mychat/css/h5app.css">
-    <link rel="stylesheet" type="text/css" href="__STATIC__/mychat/fonts/iconfont.css?v=2016070717">
+    <link rel="stylesheet" type="text/css" href="/static/mychat/css/themes.css?v=2017129">
+    <link rel="stylesheet" type="text/css" href="/static/mychat/css/h5app.css">
+    <link rel="stylesheet" type="text/css" href="/static/mychat/fonts/iconfont.css?v=2016070717">
     <!--JS版本不能大于1.9否则qqFace插件会出现msie报错，1.9之后版本的js移除了msie-->
-    <script src="__STATIC__/mychat/js/jquery.min2.js"></script>
-    <script src="__STATIC__/mychat/js/dist/flexible/flexible_css.debug.js"></script>
-    <script src="__STATIC__/mychat/js/dist/flexible/flexible.debug.js"></script>
-    <script src="__STATIC__/qqFace/js/jquery.qqFace.js"></script>
+    <script src="/static/mychat/js/jquery.min2.js"></script>
+    <script src="/static/mychat/js/dist/flexible/flexible_css.debug.js"></script>
+    <script src="/static/mychat/js/dist/flexible/flexible.debug.js"></script>
+    <script src="/static/qqFace/js/jquery.qqFace.js"></script>
     <style>
         .qqFace { margin-top: -180px; background: #fff; padding: 2px; border: 1px #dfe6f6 solid; }
         .qqFace table td { padding: 0px; }
@@ -54,8 +55,8 @@
 </div>
 </div>
 <script>
-    var from_id = {$from_id};
-    var to_id = {$to_id};
+    var from_id = <?php echo $from_id; ?>;
+    var to_id = <?php echo $to_id; ?>;
     var from_head = '';
     var to_head = '';
     var to_name = '未知用户';
@@ -101,7 +102,7 @@
             //接收图片消息
             case 'say_img':
                 if (to_id == msg.from_id) {
-                    var str = '<img src="__ROOT__/uploads/'+msg.img_name+'" width="120em" height="120em">';
+                    var str = '<img src="/uploads/'+msg.img_name+'" width="120em" height="120em">';
                     receive_div(str);
                 }
                 return;
@@ -154,17 +155,15 @@
                     //拼接聊天数据
                     //图片类型
                     if (item.type == 2){
-                        item.content = '<img src="__ROOT__/uploads/'+item.content+'" width="120em" height="120em">';
+                        item.content = '<img src="/uploads/'+item.content+'" width="120em" height="120em">';
                     }else{
-                        //替换表情
                         item.content = replace_em(item.content)
                     }
                     send_div(item.content);
                 }else{
                     if (item.type == 2){
-                        item.content = '<img src="__ROOT__/uploads/'+item.content+'" width="120em" height="120em">';
+                        item.content = '<img src="/uploads/'+item.content+'" width="120em" height="120em">';
                     }else{
-                        //替换表情
                         item.content = replace_em(item.content)
                     }
                     receive_div(item.content);
@@ -216,7 +215,7 @@
             processData:false,
             success:function (data,status) {
                 if (data.status == 'ok'){
-                    var str = '<img src="__ROOT__/uploads/'+data.img_name+'" width="120em" height="120em">';
+                    var str = '<img src="/uploads/'+data.img_name+'" width="120em" height="120em">';
                     send_div(str);
                     var msg = '{"data":"'+data.img_name+'","from_id":"'+from_id+'","to_id":"'+to_id+'","type":"say_img"}';
                     ws.send(msg);
@@ -232,7 +231,7 @@
         $('.icon-emoji1').qqFace({
             id : 'facebox',
             assign:'saytext', //输入文本框
-            path:'__STATIC__/qqFace/arclist/'	//表情存放的路径
+            path:'/static/qqFace/arclist/'	//表情存放的路径
         });
         $(".sub_btn").click(function(){
             var str = $("#saytext").val();
@@ -245,7 +244,7 @@
         str = str.replace(/\</g,'&lt;');
         str = str.replace(/\>/g,'&gt;');
         str = str.replace(/\n/g,'<br/>');
-        str = str.replace(/\[em_([0-9]*)\]/g,'<img src="__STATIC__/qqFace/arclist/$1.gif" border="0" />');
+        str = str.replace(/\[em_([0-9]*)\]/g,'<img src="/static/qqFace/arclist/$1.gif" border="0" />');
         return str;
     }
 </script>
